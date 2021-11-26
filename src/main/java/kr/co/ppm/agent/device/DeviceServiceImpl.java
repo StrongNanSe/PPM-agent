@@ -17,15 +17,21 @@ public class DeviceServiceImpl implements DeviceService{
     @Autowired
     private DeviceUtil deviceUtil;
     private Logger logger = LogManager.getLogger(DeviceServiceImpl.class);
-    private static Properties properties;
+    private static Properties parasolinfo;
+    private static Properties systeminfo;
 
     static {
-        String path = "properties/parasol.properties";
-         properties = new Properties();
+        String parasolPath = "properties/parasol.properties";
+        String systemPath = "properties/system.properties";
+        parasolinfo = new Properties();
+        systeminfo = new Properties();
 
         try {
-            InputStream inputStream = Resources.getResourceAsStream(path);
-            properties.load(inputStream);
+            InputStream inputStream = Resources.getResourceAsStream(parasolPath);
+            parasolinfo.load(inputStream);
+
+            inputStream = Resources.getResourceAsStream(systemPath);
+            systeminfo.load(inputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -35,6 +41,7 @@ public class DeviceServiceImpl implements DeviceService{
 
     @Override
     public String receiveControl(String action) {
+        //TODO 모터 동작, 주변 감시, 긴급 정지, 경고 알람을 하는 곳
         logger.info("this actions is activatied : " + action);
 //        final GpioController controller = GpioFactory.getInstance();
 //
@@ -66,16 +73,10 @@ public class DeviceServiceImpl implements DeviceService{
 
     @Override
     public void sendParasolStatus() {
-        //TO DO 시스템 서버에게 상태 정보 전송
-        //파라솔아이디
-        String parasolId = properties.getProperty("parasolId");
-        //각도
+        String parasolId = parasolinfo.getProperty("parasolId");
         String angle = "" + deviceUtil.angleMeasure();
-        //온도
         String temperature = "" + deviceUtil.temperatureMeasure();
-        //풍속
         String windSpeed = "" + deviceUtil.windSpeedMeasure();
-        //강우
         String rainfall = "" + deviceUtil.rainfallDetect();
 
         StringBuffer parasolStatusInfo = new StringBuffer();
@@ -87,11 +88,11 @@ public class DeviceServiceImpl implements DeviceService{
                 .append("\"").append("rainfall").append("\":\"").append(rainfall).append("\"").append("}");
 
        try{
-            String response = sendPostType("http://localhost/status", parasolStatusInfo.toString());
+            String response = sendPostType(systeminfo.getProperty("system.ipaddress"), parasolStatusInfo.toString());
             logger.info(response);
         } catch (Exception e) {
            //오류 처리 필요
-            e.printStackTrace();
+           logger.info(e.toString());
         }
     }
 
@@ -104,21 +105,24 @@ public class DeviceServiceImpl implements DeviceService{
     @Override
     public void sendParasol() {
         StringBuffer parasolInfo = new StringBuffer();
+        String postBody = null;
 
-        Set<Object> list = properties.keySet();
+        Set<Object> list = parasolinfo.keySet();
 
         parasolInfo.append("{");
 
         for(Object obj : list) {
             parasolInfo.append("\"").append(obj.toString()).append("\"").append(":")
-                    .append("\"").append(properties.getProperty(obj.toString())).append("\",");
+                    .append("\"").append(parasolinfo.getProperty(obj.toString())).append("\",");
         }
 
         parasolInfo.replace(parasolInfo.length() - 1, parasolInfo.length(), "");
         parasolInfo.append("}");
 
+       postBody = parasolInfo.toString().replace("parasolId", "id");
+
         try{
-            String response = sendPostType("http://localhost/parasol", parasolInfo.toString().replace("parasolId", "id"));
+            String response = sendPostType(systeminfo.getProperty("system.ipaddress"), postBody);
             logger.info(response);
         } catch (Exception e) {
             //오류 처리 필요
