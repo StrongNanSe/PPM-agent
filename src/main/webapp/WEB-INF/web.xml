@@ -40,6 +40,7 @@
                 classpath:context-spring.xml
             </param-value>
         </init-param>
+        <load-on-startup>0</load-on-startup>
     </servlet>
 
     <servlet-mapping>
