@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class StatusWatchUtil implements Runnable {
     TemperatureUtil temperatureUtil;
-    final String filePath = "/home/pi/Desktop/watching/auto";
-	
+    final String checkFilePath = "/home/pi/Desktop/watching/auto";
+    final String saveFilePath = "/home/pi/Desktop/watching/autostatus/autoTemp.txt";
+
 	public StatusWatchUtil(TemperatureUtil temperatureUtil) {
 		this.temperatureUtil = temperatureUtil;
 	}
@@ -19,28 +21,31 @@ public class StatusWatchUtil implements Runnable {
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(filePath);
+            Path path = Paths.get(checkFilePath);
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
-            boolean isFirst = true;
-
             while (true) {
-                WatchKey watchKey = watchService.take();
+                final WatchKey watchKey = watchService.take();
+
+                Thread.sleep(500);
+
                 watchKey.pollEvents();
 
-                if (isFirst) {
+                int temperature = temperatureUtil.measure();
+
+                if (temperature == 0) {
+                    watchKey.reset();
+
+                    continue;
+                } else {
                     try (FileWriter fileWriter =
-                                 new FileWriter(filePath + File.separator + "autoTemp.txt")) {
-                        fileWriter.write(temperatureUtil.measure());
-
-                        isFirst = false;
-
-                        continue;
-                    } catch (IOException e) {
+                                 new FileWriter(saveFilePath)) {
+                        fileWriter.write("" + temperature);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
-                } else {
-                    isFirst = true;
+
+                    System.out.println(LocalDateTime.now() + " : " + temperature);
                 }
 
                 if (!watchKey.reset()) {

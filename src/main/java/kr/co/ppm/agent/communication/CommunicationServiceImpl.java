@@ -22,11 +22,11 @@ public class CommunicationServiceImpl implements CommunicationService {
     private CommunicationUtil communicationUtil;
 
     public static boolean isParasolInfoSaved = false;
-    private Logger logger = LogManager.getLogger(CommunicationServiceImpl.class);
     private static String parasolStatus = "F";
     private static Properties parasolInfo;
     private static Properties systemInfo;
-    private final String commandPath = "/home/pi/Desktop/command/command.txt";
+
+    private Logger logger = LogManager.getLogger(CommunicationServiceImpl.class);
 
 
     static {
@@ -37,11 +37,8 @@ public class CommunicationServiceImpl implements CommunicationService {
         systemInfo = new Properties();
 
         try {
-            InputStream inputStream = Resources.getResourceAsStream(parasolPath);
-            parasolInfo.load(inputStream);
-
-            inputStream = Resources.getResourceAsStream(systemPath);
-            systemInfo.load(inputStream);
+            parasolInfo.load(Resources.getResourceAsStream(parasolPath));
+            systemInfo.load(Resources.getResourceAsStream(systemPath));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -51,6 +48,7 @@ public class CommunicationServiceImpl implements CommunicationService {
 
     @Override
     public String receiveControl(String action) {
+        String commandPath = "/home/pi/Desktop/watching/command/command.txt";
 
         //TODO 상태 코드 수정 필요
         String code = "{" +
@@ -65,7 +63,7 @@ public class CommunicationServiceImpl implements CommunicationService {
 //            return code;
 //        }
 
-        this.parasolStatus = action;
+        CommunicationServiceImpl.parasolStatus = action;
 
         try (FileWriter fileWriter =
                       new FileWriter(commandPath)) {
@@ -74,14 +72,14 @@ public class CommunicationServiceImpl implements CommunicationService {
             logger.error("IOException Occurred in method receiveControl");
         }
 
-        communicationUtil.watchService();
+        communicationUtil.activeStatusWatch();
 
         return code;
     }
 
     @Override
     public void sendParasolStatus(String temperature) {
-        String parasolId = this.parasolInfo.getProperty("parasolId");
+        String parasolId = CommunicationServiceImpl.parasolInfo.getProperty("parasolId");
         String url = "http://" +systemInfo.getProperty("system.ipaddress") + "/status";
 
         Gson statusInfo = new Gson();
@@ -91,18 +89,18 @@ public class CommunicationServiceImpl implements CommunicationService {
         jsonObject.addProperty("status", parasolStatus);
         jsonObject.addProperty("temperature", temperature);
 
-       try {
-           String response = communicationUtil.sendPostType(url, statusInfo.toJson(jsonObject));
+        try {
+            String response = communicationUtil.sendPostType(url, statusInfo.toJson(jsonObject));
 
-           Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
+            Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
 
-           if ("200".equals(responseParse.get("code"))) {
-               logger.info("Save Parasol Status Information is Success");
-           } else {
-               //TODO 오류 코드 처리
-           }
+            if ("200".equals(responseParse.get("code"))) {
+                logger.error("Save Parasol Status Information is Success");
+            } else {
+                //TODO 오류 코드 처리
+            }
         } catch (Exception e) {
-           logger.error("Exception Occurred in method sendParasolStatus");
+            logger.error("Exception Occurred in method sendParasolStatus");
         }
     }
 
@@ -119,14 +117,14 @@ public class CommunicationServiceImpl implements CommunicationService {
         }
 
         try{
-            String response = communicationUtil.sendPostType(url, Info.toJson(jsonObject));
+            String response = communicationUtil.sendPostType(url, Info.toJson(jsonObject).replace("parasolId", "id"));
 
             Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
 
             if ("200".equals(responseParse.get("code"))) {
                 CommunicationServiceImpl.isParasolInfoSaved = true;
 
-                logger.info("Save Parasol Information is Success");
+                logger.error("Save Parasol Information is Success");
             } else {
                 //TODO 오류 코드 처리
             }

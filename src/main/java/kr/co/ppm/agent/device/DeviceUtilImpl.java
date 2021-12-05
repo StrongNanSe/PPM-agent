@@ -9,12 +9,11 @@ import java.util.List;
 public class DeviceUtilImpl implements DeviceUtil {
     private final GpioController gpio = GpioFactory.getInstance();
     private int echo, trig, actionTemperature, autoTemperature, warnNotice;
-    private long rejectionStart = 1000;
-    private long rejectionTime = 1000;
+    private long rejectionStart;
+    private long rejectionTime;
     private GpioPinDigitalOutput pinTrig;
     private GpioPinDigitalInput pinEcho;
 	private GpioPinDigitalOutput pinWarnNotice;
-    private String commandPath = "/home/pi/Desktop/watching/command";
 
     public DeviceUtilImpl(int echo, int trig, int actionTemperature, int autoTemperature, int warnNotice, long rejectionStart, long rejectionTime) {
         this.echo = echo;
@@ -41,7 +40,7 @@ public class DeviceUtilImpl implements DeviceUtil {
 
         try (FileWriter fileWriter =
                      new FileWriter(filePath)) {
-            fileWriter.write(temperature);
+            fileWriter.write("" + temperature);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -77,8 +76,8 @@ public class DeviceUtilImpl implements DeviceUtil {
 
     @Override
     public boolean detectObject() {
-        int distance = 0;
-        long startTime, endTime, rejectionStart = 0, rejectionTime = 0;
+        int distance;
+        long startTime, endTime, start = 0, time = 0;
 
         pinTrig.low();
         busyWaitMicros(2);
@@ -90,9 +89,9 @@ public class DeviceUtilImpl implements DeviceUtil {
 
         while (pinEcho.isLow()) {
             busyWaitNanos(1);
-            rejectionStart++;
+            start++;
 
-            if (rejectionStart == rejectionStart) {
+            if (start == rejectionStart) {
                 return true;
             }
         }
@@ -101,9 +100,9 @@ public class DeviceUtilImpl implements DeviceUtil {
 
         while (pinEcho.isHigh()) {
             busyWaitNanos(1);
-            rejectionTime++;
+            time++;
 
-            if (rejectionTime == rejectionTime) {
+            if (time == rejectionTime) {
                 return true;
             }
         }
@@ -112,11 +111,7 @@ public class DeviceUtilImpl implements DeviceUtil {
 
         distance = (int) ((endTime - startTime) / 5882.35294118);
 
-        if (distance < 100) {
-            return true;
-        } else {
-            return false;
-        }
+        return distance < 100;
     }
 
     private void busyWaitMicros(long micros) {
@@ -131,6 +126,8 @@ public class DeviceUtilImpl implements DeviceUtil {
     }
 
     private String watchService() {
+        String commandPath = "/home/pi/Desktop/watching/command";
+
 		try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
@@ -155,12 +152,11 @@ public class DeviceUtilImpl implements DeviceUtil {
             e.printStackTrace();
         }
 
-        //TODO 현재 상태 확인 방법 필요
         return "";
     }
 
     public static void main(String[] args) throws Exception{
-		DeviceUtilImpl deviceUtilImpl = new DeviceUtilImpl(0, 1, 7, 8,  2, 1000, 235229411);
+		DeviceUtilImpl deviceUtilImpl = new DeviceUtilImpl(0, 1, 7, 8, 2, 1000, 235229411);
 		
         TemperatureUtil actionTemperatureUtil = new TemperatureUtil(deviceUtilImpl.actionTemperature);
         TemperatureUtil autoTemperatureUtil = new TemperatureUtil(deviceUtilImpl.autoTemperature);

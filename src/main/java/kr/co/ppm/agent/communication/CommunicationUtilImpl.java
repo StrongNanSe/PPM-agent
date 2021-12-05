@@ -18,31 +18,58 @@ import java.util.Map;
 public class CommunicationUtilImpl implements CommunicationUtil {
     @Autowired
     CommunicationService communicationService;
-    private String statusPath = "/home/pi/Desktop/watching/status";
+
     private Logger logger = LogManager.getLogger(CommunicationUtilImpl.class);
 
     @Override
-    public void watchService() {
+    public void autoStatusWatch() {
+        String autoStatusPath = "/home/pi/Desktop/watching/autostatus";
+
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(statusPath);
+            Path path = Paths.get(autoStatusPath);
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             WatchKey watchKey = watchService.take();
-
-            Path context = (Path) watchKey.pollEvents().get(0).context();
+            watchKey.pollEvents();
 
             char[] buffer = new char[5];
-            try (FileReader fileReader = new FileReader(statusPath + File.separator + context.getFileName())) {
+            try (FileReader fileReader = new FileReader(autoStatusPath + File.separator + "autoTemp.txt")) {
                 fileReader.read(buffer);
             } catch (IOException e) {
-                logger.error("IOException Occurred in method watchService");
+                logger.error("IOException Occurred in method autoStatusWatch");
             }
 
             communicationService.sendParasolStatus(new String(buffer).trim());
         } catch (Exception e) {
-            logger.error("Exception Occurred in method watchService");
+            logger.error("Exception Occurred in method autoStatusWatch");
+        }
+    }
+
+    @Override
+    public void activeStatusWatch() {
+        String activeStatusPath = "/home/pi/Desktop/watching/activestatus";
+
+        try {
+            WatchService watchService = FileSystems.getDefault().newWatchService();
+
+            Path path = Paths.get(activeStatusPath);
+            path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+
+            WatchKey watchKey = watchService.take();
+            watchKey.pollEvents();
+
+            char[] buffer = new char[5];
+            try (FileReader fileReader = new FileReader(activeStatusPath + File.separator + "activeTemp.txt")) {
+                fileReader.read(buffer);
+            } catch (IOException e) {
+                logger.error("IOException Occurred in method activeStatusWatch");
+            }
+
+            communicationService.sendParasolStatus(new String(buffer).trim());
+        } catch (Exception e) {
+            logger.error("Exception Occurred in method activeStatusWatch");
         }
     }
 

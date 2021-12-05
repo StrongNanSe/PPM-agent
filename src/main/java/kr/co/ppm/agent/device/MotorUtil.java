@@ -11,17 +11,15 @@ public class MotorUtil implements Runnable{
     private static final PinState HIGH = PinState.HIGH;
 
 
-    private static final PinState MOTOR_SEQUENCE[][] = new PinState[][] { { LOW, LOW, LOW, HIGH },
+    private static final PinState[][] MOTOR_SEQUENCE = new PinState[][] { { LOW, LOW, LOW, HIGH },
             { LOW, LOW, HIGH, LOW }, { LOW, HIGH, LOW, LOW }, { HIGH, LOW, LOW, LOW }, { LOW, LOW, LOW, HIGH },
             { LOW, LOW, HIGH, LOW }, { LOW, HIGH, LOW, LOW }, { HIGH, LOW, LOW, LOW } };
 
     private int stepDuration;
 
-
     private GpioPinDigitalOutput[] motorPins;
 
-    public MotorUtil(Pin pinA, Pin pinB, Pin pinC, Pin pinD, int stepDuration)
-    {
+    public MotorUtil(Pin pinA, Pin pinB, Pin pinC, Pin pinD, int stepDuration) {
 		gpio = GpioFactory.getInstance();
 		
         motorPins = new GpioPinDigitalOutput[4];
@@ -36,7 +34,7 @@ public class MotorUtil implements Runnable{
 
     public void action() {
         int steps;
-        steps = (int) (512 * 4 * angle) / 360;
+        steps = (512 * 4 * angle) / 360;
 
         step(steps);
     }
@@ -46,11 +44,9 @@ public class MotorUtil implements Runnable{
             for (int currentStep = noOfSteps; currentStep > 0; currentStep--) {
                 int currentSequenceNo = currentStep % 8;
 
-                if (isWarn) {
+                while (isWarn) {
                     try {
-                        Thread.sleep(2000);
-
-                        isWarn = false;
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -62,10 +58,9 @@ public class MotorUtil implements Runnable{
             for (int currentStep = 0; currentStep < Math.abs(noOfSteps); currentStep++) {
                 int currentSequenceNo = currentStep % 8;
 
-                if (isWarn) {
+                while (isWarn) {
                     try {
-                        Thread.sleep(2000);
-                        isWarn = false;
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -83,6 +78,7 @@ public class MotorUtil implements Runnable{
         try {
             Thread.sleep(stepDuration);
         } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -90,7 +86,7 @@ public class MotorUtil implements Runnable{
     public void run() {
         action();
 
-        this.isMove = false;
+        MotorUtil.isMove = false;
 
 		gpio.shutdown();
         gpio.unprovisionPin(motorPins);

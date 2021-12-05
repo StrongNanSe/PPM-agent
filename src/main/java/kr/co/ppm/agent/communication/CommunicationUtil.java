@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.util.Map;
 
 public interface CommunicationUtil {
-    public void watchService();
-    public String sendPostType(String url, String postBody) throws IOException;
-    public Map<String, String> parseResponseCode(String response);
+    void autoStatusWatch();
+    void activeStatusWatch();
+    String sendPostType(String url, String postBody) throws IOException;
+    Map<String, String> parseResponseCode(String response);
 }
