@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -23,11 +22,11 @@ public class CommunicationServiceImpl implements CommunicationService {
 
     public static boolean isParasolInfoSaved = false;
     private static String parasolStatus = "F";
+    private static String beforeTemperature = "";
     private static Properties parasolInfo;
     private static Properties systemInfo;
 
     private Logger logger = LogManager.getLogger(CommunicationServiceImpl.class);
-
 
     static {
         String parasolPath = "properties/parasol.properties";
@@ -50,37 +49,54 @@ public class CommunicationServiceImpl implements CommunicationService {
     public String receiveControl(String action) {
         String commandPath = "/home/pi/Desktop/watching/command/command.txt";
 
-        //TODO 상태 코드 수정 필요
-        String code = "{" +
-                "    \"code\": \"200\"," +
-                "    \"error\": {" +
-                "        \"errorCode\": \"0\"," +
-                "        \"message\": \"null\"" +
-                "    }" +
-                "}";
+        Gson code = new Gson();
 
-//        if (parasolStatus.equals(action)) {
-//            return code;
-//        }
-
-        CommunicationServiceImpl.parasolStatus = action;
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("code", "200");
+        jsonObject.addProperty("message", "null");
 
         try (FileWriter fileWriter =
                       new FileWriter(commandPath)) {
             fileWriter.write(action);
         } catch (IOException e) {
             logger.error("IOException Occurred in method receiveControl");
+
+            jsonObject.addProperty("code", "500");
+            jsonObject.addProperty("message", "IOException Occurred");
+
+            return code.toJson(jsonObject);
         }
 
-        communicationUtil.activeStatusWatch();
+        if (parasolStatus.equals(action)) {
+            jsonObject.addProperty("move", CommunicationServiceImpl.parasolStatus);
 
-        return code;
+            System.out.println(" sameStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
+
+            return code.toJson(jsonObject);
+        } else {
+            CommunicationServiceImpl.parasolStatus = action;
+
+            jsonObject.addProperty("move", CommunicationServiceImpl.parasolStatus);
+
+            System.out.println(" diferentStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
+
+            return code.toJson(jsonObject);
+        }
     }
 
     @Override
-    public void sendParasolStatus(String temperature) {
+    public void sendParasolStatus(String temperature, String move) {
         String parasolId = CommunicationServiceImpl.parasolInfo.getProperty("parasolId");
         String url = "http://" +systemInfo.getProperty("system.ipaddress") + "/status";
+
+        if (!"".equals(temperature)) {
+            beforeTemperature = temperature;
+
+        } else {
+            logger.error("this Temp is Error!! is Blink!");
+            System.out.println("\n" + temperature + "\n");
+            temperature = beforeTemperature;
+        }
 
         Gson statusInfo = new Gson();
 
@@ -88,6 +104,7 @@ public class CommunicationServiceImpl implements CommunicationService {
         jsonObject.addProperty("parasolId", parasolId);
         jsonObject.addProperty("status", parasolStatus);
         jsonObject.addProperty("temperature", temperature);
+        jsonObject.addProperty("move", move);
 
         try {
             String response = communicationUtil.sendPostType(url, statusInfo.toJson(jsonObject));
@@ -95,11 +112,12 @@ public class CommunicationServiceImpl implements CommunicationService {
             Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
 
             if ("200".equals(responseParse.get("code"))) {
-                logger.error("Save Parasol Status Information is Success");
+                logger.info("Save Parasol Status Information is Success");
             } else {
-                //TODO 오류 코드 처리
+                logger.error(responseParse.get("message"));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error("Exception Occurred in method sendParasolStatus");
         }
     }
@@ -124,9 +142,9 @@ public class CommunicationServiceImpl implements CommunicationService {
             if ("200".equals(responseParse.get("code"))) {
                 CommunicationServiceImpl.isParasolInfoSaved = true;
 
-                logger.error("Save Parasol Information is Success");
+                logger.info("Save Parasol Information is Success");
             } else {
-                //TODO 오류 코드 처리
+                logger.error(responseParse.get("message"));
             }
         } catch (Exception e) {
             logger.error("Exception Occurred in method sendParasol");

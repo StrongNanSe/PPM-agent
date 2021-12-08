@@ -24,29 +24,29 @@ public class StatusWatchUtil implements Runnable {
             Path path = Paths.get(checkFilePath);
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
-            while (true) {
-                final WatchKey watchKey = watchService.take();
+            WatchKey watchKey = watchService.take();
+            watchKey.pollEvents();
+            watchKey.reset();
 
-                Thread.sleep(500);
+            while (true) {
+                watchKey = watchService.take();
+
+                Thread.sleep(50);
 
                 watchKey.pollEvents();
 
-                int temperature = temperatureUtil.measure();
-
-                if (temperature == 0) {
-                    watchKey.reset();
-
-                    continue;
-                } else {
-                    try (FileWriter fileWriter =
-                                 new FileWriter(saveFilePath)) {
-                        fileWriter.write("" + temperature);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    System.out.println(LocalDateTime.now() + " : " + temperature);
+                int temperature;
+                while((temperature = temperatureUtil.measure()) == 0) {
                 }
+
+                try (FileWriter fileWriter =
+                             new FileWriter(saveFilePath)) {
+                    fileWriter.write("" + temperature);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                System.out.println(LocalDateTime.now() + " : " + temperature);
 
                 if (!watchKey.reset()) {
                     break;

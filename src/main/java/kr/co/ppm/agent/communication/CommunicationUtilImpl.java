@@ -41,7 +41,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
                 logger.error("IOException Occurred in method autoStatusWatch");
             }
 
-            communicationService.sendParasolStatus(new String(buffer).trim());
+            communicationService.sendParasolStatus(new String(buffer).trim(), "N");
         } catch (Exception e) {
             logger.error("Exception Occurred in method autoStatusWatch");
         }
@@ -67,7 +67,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
                 logger.error("IOException Occurred in method activeStatusWatch");
             }
 
-            communicationService.sendParasolStatus(new String(buffer).trim());
+            communicationService.sendParasolStatus(new String(buffer).trim(), "Y");
         } catch (Exception e) {
             logger.error("Exception Occurred in method activeStatusWatch");
         }
@@ -96,8 +96,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
         Map<String, String> responseParse = new Hashtable<String, String>();
 
         responseParse.put("code", response.split(":")[1].split("\"")[1]);
-        responseParse.put("errorCode", response.split("[{]")[2].split(":")[1].split("\"")[1]);
-        responseParse.put("message", response.split("[{]")[2].split(":")[2].split("\"")[1]);
+        responseParse.put("message", response.split(":")[2].split("\"")[1]);
 
         return responseParse;
     }

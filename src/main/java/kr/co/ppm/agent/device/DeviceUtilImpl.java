@@ -7,6 +7,7 @@ import java.nio.file.*;
 import java.util.List;
 
 public class DeviceUtilImpl implements DeviceUtil {
+    private static String parasolStatus = "F";
     private final GpioController gpio = GpioFactory.getInstance();
     private int echo, trig, actionTemperature, autoTemperature, warnNotice;
     private long rejectionStart;
@@ -168,9 +169,12 @@ public class DeviceUtilImpl implements DeviceUtil {
 
         while(true) {
             String action = deviceUtilImpl.watchService();
-			
-            deviceUtilImpl.temperatureMeasure(actionTemperatureUtil.measure());
-            deviceUtilImpl.action(action);
+
+            if (!DeviceUtilImpl.parasolStatus.equals(action)) {
+                DeviceUtilImpl.parasolStatus = action;
+
+                deviceUtilImpl.action(action);
+            }
 
             while (MotorUtil.isMove) {
                 if (deviceUtilImpl.detectObject()) {
@@ -182,6 +186,8 @@ public class DeviceUtilImpl implements DeviceUtil {
 				
 				deviceUtilImpl.pinWarnNotice.low();
             }
+
+            deviceUtilImpl.temperatureMeasure(actionTemperatureUtil.measure());
         }
     }
 }

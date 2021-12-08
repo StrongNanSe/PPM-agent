@@ -1,5 +1,7 @@
 package kr.co.ppm.agent.communication;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,11 +11,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/device")
 public class CommunicationController {
+    private Logger logger = LogManager.getLogger(CommunicationController.class);
+
     @Autowired
     private CommunicationService communicationService;
 
+    @Autowired
+    private CommunicationUtil communicationUtil;
+
     @GetMapping("/{action}")
     public String receiveParasolControl(@PathVariable String action) {
-        return communicationService.receiveControl(action);
+        String code =  communicationService.receiveControl(action);
+
+        communicationUtil.activeStatusWatch();
+
+        return code;
     }
 }

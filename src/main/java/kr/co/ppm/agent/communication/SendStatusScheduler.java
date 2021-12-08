@@ -20,7 +20,7 @@ public class SendStatusScheduler {
 
     private Logger logger = LogManager.getLogger(SendStatusScheduler.class);
 
-    @Scheduled(fixedRate = 1000 * 5)
+    @Scheduled(initialDelay = 1000 * 10, fixedRate = 1000 * 5)
     public void autoSendInfo() {
         String filePath = "/home/pi/Desktop/watching/auto/send.txt";
 
