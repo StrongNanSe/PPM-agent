@@ -20,8 +20,10 @@ public class SendStatusScheduler {
 
     private Logger logger = LogManager.getLogger(SendStatusScheduler.class);
 
-    @Scheduled(initialDelay = 1000 * 10, fixedRate = 1000 * 5)
+    @Scheduled(initialDelay = 1000 * 5, fixedRate = 1000 * 20)
     public void autoSendInfo() {
+        logger.info("Do Auto Send Status");
+
         String filePath = "/home/pi/Desktop/watching/auto/send.txt";
 
         if (!CommunicationServiceImpl.isParasolInfoSaved) {

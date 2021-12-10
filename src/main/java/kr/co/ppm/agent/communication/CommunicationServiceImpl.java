@@ -2,6 +2,7 @@ package kr.co.ppm.agent.communication;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import okhttp3.*;
 import org.apache.ibatis.io.Resources;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,11 +75,11 @@ public class CommunicationServiceImpl implements CommunicationService {
 
             return code.toJson(jsonObject);
         } else {
+            System.out.println(" diferentStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
+
             CommunicationServiceImpl.parasolStatus = action;
 
             jsonObject.addProperty("move", CommunicationServiceImpl.parasolStatus);
-
-            System.out.println(" diferentStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
 
             return code.toJson(jsonObject);
         }
@@ -86,8 +87,9 @@ public class CommunicationServiceImpl implements CommunicationService {
 
     @Override
     public void sendParasolStatus(String temperature, String move) {
-        String parasolId = CommunicationServiceImpl.parasolInfo.getProperty("parasolId");
+        String parasolId = CommunicationServiceImpl.parasolInfo.getProperty("id");
         String url = "http://" +systemInfo.getProperty("system.ipaddress") + "/status";
+        String code = "";
 
         if (!"".equals(temperature)) {
             beforeTemperature = temperature;
@@ -106,48 +108,66 @@ public class CommunicationServiceImpl implements CommunicationService {
         jsonObject.addProperty("temperature", temperature);
         jsonObject.addProperty("move", move);
 
-        try {
-            String response = communicationUtil.sendPostType(url, statusInfo.toJson(jsonObject));
+        OkHttpClient client = new OkHttpClient();
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), statusInfo.toJson(jsonObject));
+        Request request = new Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build();
 
-            Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
+        try (Response response = client.newCall(request).execute()) {
+            code = response.body().string();
+
+            System.out.println("code is : " + code);
+
+            Map<String, String> responseParse = communicationUtil.parseResponseCode(code);
 
             if ("200".equals(responseParse.get("code"))) {
                 logger.info("Save Parasol Status Information is Success");
             } else {
                 logger.error(responseParse.get("message"));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("Exception Occurred in method sendParasolStatus");
+        } catch (IOException e) {
+            logger.error("IOException Occurred in method sendParasolStatus");
         }
     }
 
     @Override
     public void sendParasol() {
-        String url = "http://" + systemInfo.getProperty("system.ipaddress") + "/parasol";
+        String url = "http://" + systemInfo.getProperty("system.ipaddress") + "/parasol/info";
+        String code = "";
 
         Gson Info = new Gson();
         JsonObject jsonObject = new JsonObject();
 
         Set<Object> list = parasolInfo.keySet();
-        for(Object obj : list) {
+        for (Object obj : list) {
             jsonObject.addProperty(obj.toString(), parasolInfo.getProperty(obj.toString()));
         }
 
-        try{
-            String response = communicationUtil.sendPostType(url, Info.toJson(jsonObject).replace("parasolId", "id"));
+        OkHttpClient client = new OkHttpClient();
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), Info.toJson(jsonObject));
+        Request request = new Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build();
 
-            Map<String, String> responseParse = communicationUtil.parseResponseCode(response);
+        try (Response response = client.newCall(request).execute()) {
+            code = response.body().string();
+
+            System.out.println("code is : " + code);
+
+            Map<String, String> responseParse = communicationUtil.parseResponseCode(code);
 
             if ("200".equals(responseParse.get("code"))) {
-                CommunicationServiceImpl.isParasolInfoSaved = true;
-
                 logger.info("Save Parasol Information is Success");
+
+                isParasolInfoSaved = true;
             } else {
                 logger.error(responseParse.get("message"));
             }
-        } catch (Exception e) {
-            logger.error("Exception Occurred in method sendParasol");
+        } catch (IOException e) {
+            logger.error("IOException Occurred in method sendParasol");
         }
     }
 }

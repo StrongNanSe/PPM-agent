@@ -4,12 +4,12 @@ import com.pi4j.io.gpio.*;
 
 import java.io.*;
 import java.nio.file.*;
-import java.util.List;
 
 public class DeviceUtilImpl implements DeviceUtil {
-    private static String parasolStatus = "F";
+	static boolean isMotorAction = false;
+	private static String parasolStatus = "F";
     private final GpioController gpio = GpioFactory.getInstance();
-    private int echo, trig, actionTemperature, autoTemperature, warnNotice;
+    private int actionTemperature, autoTemperature;
     private long rejectionStart;
     private long rejectionTime;
     private GpioPinDigitalOutput pinTrig;
@@ -17,11 +17,8 @@ public class DeviceUtilImpl implements DeviceUtil {
 	private GpioPinDigitalOutput pinWarnNotice;
 
     public DeviceUtilImpl(int echo, int trig, int actionTemperature, int autoTemperature, int warnNotice, long rejectionStart, long rejectionTime) {
-        this.echo = echo;
-        this.trig = trig;
         this.actionTemperature = actionTemperature;
         this.autoTemperature = autoTemperature;
-		this.warnNotice = warnNotice;
         this.rejectionStart = rejectionStart;
         this.rejectionTime = rejectionTime;
 
@@ -33,39 +30,41 @@ public class DeviceUtilImpl implements DeviceUtil {
 		pinWarnNotice = gpio.provisionDigitalOutputPin(RaspiPin.getPinByAddress(warnNotice), PinState.LOW);
     }
 
-    private int[] dataSet = { 0, 0, 0, 0, 0 };
-
     @Override
     public void temperatureMeasure(int temperature) {
-        final String filePath = "/home/pi/Desktop/watching/status/activeTemp.txt";
+        final String filePath = "/home/pi/Desktop/watching/activestatus/activeTemp.txt";
 
-        try (FileWriter fileWriter =
-                     new FileWriter(filePath)) {
-            fileWriter.write("" + temperature);
-        } catch (IOException e) {
+        try (BufferedWriter bufferedWriter = 
+        		new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath)))) {
+        	bufferedWriter.write("" + temperature);
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     @Override
-    public void warnNotice() {
-		pinWarnNotice.high();
+    public void warnNotice() throws InterruptedException {
+		for (int i = 0; i < 3; i++) {
+            pinWarnNotice.high();
+            Thread.sleep(200);
+            pinWarnNotice.low();
+            Thread.sleep(200);
+        }
     }
 
     @Override
     public void action(String control) {
-		if ("U".equals(control)) {
-            MotorUtil.angle = 270;
-        } else if ("F".equals(control)) {
-            MotorUtil.angle = -270;
-        } else {
-            return;
+    	boolean isFold = false;
+    	
+		if ("F".equals(control)) {
+			isFold = true;
         }
 		
-        MotorUtil motorUtil = new MotorUtil(RaspiPin.GPIO_03, RaspiPin.GPIO_04, RaspiPin.GPIO_05, RaspiPin.GPIO_06, 3);
+        MotorUtil motorUtil = new MotorUtil(RaspiPin.GPIO_03, RaspiPin.GPIO_04, RaspiPin.GPIO_05, RaspiPin.GPIO_06, 10, isFold);
         Thread motorThread = new Thread(motorUtil, "motorThread");
 
-        MotorUtil.isMove = true;
+        DeviceUtilImpl.isMotorAction = true;
 
         motorThread.start();
     }
@@ -127,8 +126,8 @@ public class DeviceUtilImpl implements DeviceUtil {
     }
 
     private String watchService() {
-        String commandPath = "/home/pi/Desktop/watching/command";
-
+		String commandPath = "/home/pi/Desktop/watching/command";
+		
 		try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
@@ -136,24 +135,37 @@ public class DeviceUtilImpl implements DeviceUtil {
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             watchService.take();
-
+            
+            String command = null;
             char[] buffer = new char[5];
-            try (FileReader fileReader = new FileReader(commandPath + File.separator + "command.txt")) {
-                fileReader.read(buffer);
+            try (BufferedReader bufferedReader 
+            		= new BufferedReader(new InputStreamReader(
+            		new FileInputStream(commandPath + File.separator + "command.txt")))) {
+            	command = bufferedReader.readLine().trim();
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (NullPointerException e) {
+            	 if ("F".equals(parasolStatus)) {
+                 	command = "U";
+                 } else {
+                	 command = "F";
+                 }
             }
 
-            if ("F".equals(new String(buffer).trim())) {
+            if ("F".equals(command)) {
+            	System.out.println("command is " + command);
+            	
                 return "F";
             } else {
+            	System.out.println("command is " + command);
+            	
                 return "U";
             }
 		} catch (Exception e) {
             e.printStackTrace();
         }
 
-        return "";
+        return DeviceUtilImpl.parasolStatus;
     }
 
     public static void main(String[] args) throws Exception{
@@ -171,23 +183,25 @@ public class DeviceUtilImpl implements DeviceUtil {
             String action = deviceUtilImpl.watchService();
 
             if (!DeviceUtilImpl.parasolStatus.equals(action)) {
-                DeviceUtilImpl.parasolStatus = action;
-
+				DeviceUtilImpl.parasolStatus = action;
+				
                 deviceUtilImpl.action(action);
             }
 
-            while (MotorUtil.isMove) {
+            while (DeviceUtilImpl.isMotorAction) {
                 if (deviceUtilImpl.detectObject()) {
-                    deviceUtilImpl.emergencyStop();
-					deviceUtilImpl.warnNotice();
+					if (deviceUtilImpl.detectObject()) {
+						deviceUtilImpl.emergencyStop();
+						deviceUtilImpl.warnNotice();
+					}
                 }
 
                 Thread.sleep(1000);
 				
-				deviceUtilImpl.pinWarnNotice.low();
+				MotorUtil.isWarn = false;
             }
-
-            deviceUtilImpl.temperatureMeasure(actionTemperatureUtil.measure());
+			
+			deviceUtilImpl.temperatureMeasure(actionTemperatureUtil.measure());
         }
     }
 }
