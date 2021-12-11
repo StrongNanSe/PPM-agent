@@ -11,7 +11,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -71,24 +70,6 @@ public class CommunicationUtilImpl implements CommunicationUtil {
         } catch (Exception e) {
             logger.error("Exception Occurred in method activeStatusWatch");
         }
-    }
-
-    @Override
-    public String sendPostType(String url, String postBody)  {
-        OkHttpClient client = new OkHttpClient();
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
-        } catch (IOException e) {
-            logger.error("IOException Occurred in method sendPostType");
-        }
-
-        return "error";
     }
 
     @Override
