@@ -116,18 +116,23 @@ public class CommunicationServiceImpl implements CommunicationService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            code = response.body().string();
-
-            System.out.println("code is : " + code);
-
-            Map<String, String> responseParse = communicationUtil.parseResponseCode(code);
+            Map<String, String> responseParse = communicationUtil.parseResponseCode(response.body().string());
 
             if ("200".equals(responseParse.get("code"))) {
-                logger.info("Save Parasol Status Information is Success");
+                logger.info("");
+                logger.info("====================================================");
+                logger.info("");
+                logger.info("                Send Parasol Status");
+                logger.info("                parasolId : " + parasolId);
+                logger.info("                status : " + parasolStatus);
+                logger.info("                temperature : " + temperature);
+                logger.info("");
+                logger.info("====================================================");
             } else {
                 logger.error(responseParse.get("message"));
             }
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("IOException Occurred in method sendParasolStatus");
         }
     }
@@ -153,14 +158,15 @@ public class CommunicationServiceImpl implements CommunicationService {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            code = response.body().string();
-
-            System.out.println("code is : " + code);
-
-            Map<String, String> responseParse = communicationUtil.parseResponseCode(code);
+            Map<String, String> responseParse = communicationUtil.parseResponseCode(response.body().string());
 
             if ("200".equals(responseParse.get("code"))) {
-                logger.info("Save Parasol Information is Success");
+                logger.info("");
+                logger.info("====================================================");
+                logger.info("");
+                logger.info("              Send Parasol Information");
+                logger.info("");
+                logger.info("====================================================");
 
                 isParasolInfoSaved = true;
             } else {
