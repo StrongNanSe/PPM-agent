@@ -26,23 +26,23 @@ public class CommunicationServiceImpl implements CommunicationService {
     private static String beforeTemperature = "";
     private static Properties parasolInfo;
     private static Properties systemInfo;
-    public static Properties filpathInfo;
+    public static Properties filPathInfo;
 
     private Logger logger = LogManager.getLogger(CommunicationServiceImpl.class);
 
     static {
         String parasolPath = "properties/parasol.properties";
         String systemPath = "properties/system.properties";
-        String filepathPath = "properties/filepath.properties";
+        String filePath = "properties/filepath.properties";
 
         parasolInfo = new Properties();
         systemInfo = new Properties();
-        filpathInfo = new Properties();
+        filPathInfo = new Properties();
 
         try {
             parasolInfo.load(Resources.getResourceAsStream(parasolPath));
             systemInfo.load(Resources.getResourceAsStream(systemPath));
-            filpathInfo.load(Resources.getResourceAsStream(filepathPath));
+            filPathInfo.load(Resources.getResourceAsStream(filePath));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -59,7 +59,7 @@ public class CommunicationServiceImpl implements CommunicationService {
         jsonObject.addProperty("message", "null");
 
         try (FileWriter fileWriter =
-                      new FileWriter(filpathInfo.getProperty("commandPath.file"))) {
+                      new FileWriter(filPathInfo.getProperty("commandPath.file"))) {
             fileWriter.write(action);
         } catch (IOException e) {
             logger.error("IOException Occurred in method receiveControl");
@@ -73,11 +73,25 @@ public class CommunicationServiceImpl implements CommunicationService {
         if (parasolStatus.equals(action)) {
             jsonObject.addProperty("move", CommunicationServiceImpl.parasolStatus);
 
-            System.out.println(" sameStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
+            logger.info("");
+            logger.info("====================================================");
+            logger.info("");
+            logger.info("                SameStatus");
+            logger.info("                Action : " + action);
+            logger.info("                CurrentStatus : " + CommunicationServiceImpl.parasolStatus);
+            logger.info("");
+            logger.info("====================================================");
 
             return code.toJson(jsonObject);
         } else {
-            System.out.println(" diferentStatus -> action : " + action + ", generalStatus : " + CommunicationServiceImpl.parasolStatus);
+            logger.info("");
+            logger.info("====================================================");
+            logger.info("");
+            logger.info("                DifferentStatus");
+            logger.info("                Action : " + action);
+            logger.info("                CurrentStatus : " + CommunicationServiceImpl.parasolStatus);
+            logger.info("");
+            logger.info("====================================================");
 
             CommunicationServiceImpl.parasolStatus = action;
 
@@ -91,14 +105,13 @@ public class CommunicationServiceImpl implements CommunicationService {
     public void sendParasolStatus(String temperature, String move) {
         String parasolId = CommunicationServiceImpl.parasolInfo.getProperty("id");
         String url = "http://" +systemInfo.getProperty("system.ipaddress") + "/status";
-        String code = "";
 
         if (!"".equals(temperature)) {
             beforeTemperature = temperature;
 
         } else {
             logger.error("this Temp is Error!! is Blink!");
-            System.out.println("\n" + temperature + "\n");
+
             temperature = beforeTemperature;
         }
 
@@ -142,7 +155,6 @@ public class CommunicationServiceImpl implements CommunicationService {
     @Override
     public void sendParasol() {
         String url = "http://" + systemInfo.getProperty("system.ipaddress") + "/parasol/info";
-        String code = "";
 
         Gson Info = new Gson();
         JsonObject jsonObject = new JsonObject();

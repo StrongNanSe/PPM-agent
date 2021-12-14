@@ -19,8 +19,6 @@ public class CommunicationController {
 
     @GetMapping("/{action}")
     public String receiveParasolControl(@PathVariable String action) {
-        System.out.println("Request is Arrived" + LocalDateTime.now());
-
         String code =  communicationService.receiveControl(action);
 
         communicationUtil.activeStatusWatch();

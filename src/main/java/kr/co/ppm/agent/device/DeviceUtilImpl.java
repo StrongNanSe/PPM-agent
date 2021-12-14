@@ -32,15 +32,16 @@ public class DeviceUtilImpl implements DeviceUtil {
 
     @Override
     public void temperatureMeasure(int temperature) {
-        final String filePath = "/home/pi/Desktop/watching/activestatus/activeTemp.txt";
+        final String filePath = "/home/pi/Desktop/watching/activeStatus/activeTemp.txt";
 
         try (BufferedWriter bufferedWriter = 
         		new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath)))) {
         	bufferedWriter.write("" + temperature);
+
+            bufferedWriter.flush();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -48,6 +49,7 @@ public class DeviceUtilImpl implements DeviceUtil {
 		for (int i = 0; i < 3; i++) {
             pinWarnNotice.high();
             Thread.sleep(200);
+
             pinWarnNotice.low();
             Thread.sleep(200);
         }
@@ -77,7 +79,10 @@ public class DeviceUtilImpl implements DeviceUtil {
     @Override
     public boolean detectObject() {
         int distance;
-        long startTime, endTime, start = 0, time = 0;
+        long startTime;
+        long endTime;
+        long start = 0;
+        long time = 0;
 
         pinTrig.low();
         busyWaitMicros(2);
@@ -108,7 +113,6 @@ public class DeviceUtilImpl implements DeviceUtil {
         }
 
         endTime = System.nanoTime();
-
         distance = (int) ((endTime - startTime) / 5882.35294118);
 
         return distance < 100;
@@ -127,6 +131,7 @@ public class DeviceUtilImpl implements DeviceUtil {
 
     private String watchService() {
 		String commandPath = "/home/pi/Desktop/watching/command";
+        String command = null;
 		
 		try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
@@ -135,8 +140,7 @@ public class DeviceUtilImpl implements DeviceUtil {
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             watchService.take();
-            
-            String command = null;
+
             char[] buffer = new char[5];
             try (BufferedReader bufferedReader 
             		= new BufferedReader(new InputStreamReader(
@@ -145,22 +149,10 @@ public class DeviceUtilImpl implements DeviceUtil {
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (NullPointerException e) {
-            	 if ("F".equals(parasolStatus)) {
-                 	command = "U";
-                 } else {
-                	 command = "F";
-                 }
+                command = "F".equals(parasolStatus) ? "U" : "F" ;
             }
 
-            if ("F".equals(command)) {
-            	System.out.println("command is " + command);
-            	
-                return "F";
-            } else {
-            	System.out.println("command is " + command);
-            	
-                return "U";
-            }
+            return command;
 		} catch (Exception e) {
             e.printStackTrace();
         }
@@ -168,16 +160,16 @@ public class DeviceUtilImpl implements DeviceUtil {
         return DeviceUtilImpl.parasolStatus;
     }
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) {
 		DeviceUtilImpl deviceUtilImpl = new DeviceUtilImpl(0, 1, 7, 8, 2, 1000, 235229411);
 		
         TemperatureUtil actionTemperatureUtil = new TemperatureUtil(deviceUtilImpl.actionTemperature);
         TemperatureUtil autoTemperatureUtil = new TemperatureUtil(deviceUtilImpl.autoTemperature);
 		
-		Runnable autoWatch = new StatusWatchUtil(autoTemperatureUtil);
-		Thread autoWatchThread = new Thread(autoWatch, "autoWatchThread");
-		
-		autoWatchThread.start();   
+		Runnable statusWatchUtil = new StatusWatchUtil(autoTemperatureUtil);
+		Thread statusWatchUtilThread = new Thread(statusWatchUtil, "statusWatchUtilThread");
+
+        statusWatchUtilThread.start();
 
         while(true) {
             String action = deviceUtilImpl.watchService();
@@ -188,19 +180,21 @@ public class DeviceUtilImpl implements DeviceUtil {
                 deviceUtilImpl.action(action);
             }
 
-            while (DeviceUtilImpl.isMotorAction) {
-                if (deviceUtilImpl.detectObject()) {
-					if (deviceUtilImpl.detectObject()) {
-						deviceUtilImpl.emergencyStop();
-						deviceUtilImpl.warnNotice();
-					}
-                }
+            try {
+                while (DeviceUtilImpl.isMotorAction) {
+                    if (deviceUtilImpl.detectObject()) {
+                        deviceUtilImpl.emergencyStop();
+                        deviceUtilImpl.warnNotice();
+                    }
 
-                Thread.sleep(1000);
-				
-				MotorUtil.isWarn = false;
+                    Thread.sleep(1000);
+
+                    MotorUtil.isWarn = false;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-			
+
 			deviceUtilImpl.temperatureMeasure(actionTemperatureUtil.measure());
         }
     }

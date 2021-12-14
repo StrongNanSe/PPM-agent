@@ -22,13 +22,11 @@ public class SendStatusScheduler {
 
     @Scheduled(initialDelay = 1000 * 15, fixedRate = 1000 * 7)
     public void autoSendInfoAndStatus() {
-        String sendStatusPath = "/home/pi/Desktop/watching/auto/send.txt";
-
         if (!CommunicationServiceImpl.isParasolInfoSaved) {
             communicationService.sendParasol();
         } else {
             try (FileWriter fileWriter =
-                         new FileWriter(CommunicationServiceImpl.filpathInfo.getProperty("sendStatusPath.file"))) {
+                         new FileWriter(CommunicationServiceImpl.filPathInfo.getProperty("sendStatusPath.file"))) {
                 fileWriter.write("" + LocalDateTime.now());
 
                 fileWriter.flush();

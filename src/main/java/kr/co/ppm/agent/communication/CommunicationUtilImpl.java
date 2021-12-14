@@ -24,7 +24,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(CommunicationServiceImpl.filpathInfo.getProperty("autoStatusPath"));
+            Path path = Paths.get(CommunicationServiceImpl.filPathInfo.getProperty("autoStatusPath"));
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             WatchKey watchKey = watchService.take();
@@ -32,7 +32,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
 
             char[] buffer = new char[5];
             try (FileReader fileReader = new FileReader(
-                    CommunicationServiceImpl.filpathInfo.getProperty("autoStatusPath.file"))) {
+                    CommunicationServiceImpl.filPathInfo.getProperty("autoStatusPath.file"))) {
                 fileReader.read(buffer);
             } catch (IOException e) {
                 logger.error("IOException Occurred in method autoStatusWatch");
@@ -46,12 +46,10 @@ public class CommunicationUtilImpl implements CommunicationUtil {
 
     @Override
     public void activeStatusWatch() {
-        String activeStatusPath = "/home/pi/Desktop/watching/activestatus";
-
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(CommunicationServiceImpl.filpathInfo.getProperty("activeStatusPath"));
+            Path path = Paths.get(CommunicationServiceImpl.filPathInfo.getProperty("activeStatusPath"));
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             WatchKey watchKey = watchService.take();
@@ -59,7 +57,7 @@ public class CommunicationUtilImpl implements CommunicationUtil {
 
             char[] buffer = new char[5];
             try (FileReader fileReader = new FileReader(
-                    CommunicationServiceImpl.filpathInfo.getProperty("activeStatusPath.file"))) {
+                    CommunicationServiceImpl.filPathInfo.getProperty("activeStatusPath.file"))) {
                 fileReader.read(buffer);
             } catch (IOException e) {
                 logger.error("IOException Occurred in method activeStatusWatch");
