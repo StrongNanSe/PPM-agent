@@ -21,15 +21,17 @@ public class SendStatusScheduler {
     private Logger logger = LogManager.getLogger(SendStatusScheduler.class);
 
     @Scheduled(initialDelay = 1000 * 15, fixedRate = 1000 * 7)
-    public void autoSendInfo() {
-        String filePath = "/home/pi/Desktop/watching/auto/send.txt";
+    public void autoSendInfoAndStatus() {
+        String sendStatusPath = "/home/pi/Desktop/watching/auto/send.txt";
 
         if (!CommunicationServiceImpl.isParasolInfoSaved) {
             communicationService.sendParasol();
         } else {
             try (FileWriter fileWriter =
-                         new FileWriter(filePath)) {
+                         new FileWriter(CommunicationServiceImpl.filpathInfo.getProperty("sendStatusPath.file"))) {
                 fileWriter.write("" + LocalDateTime.now());
+
+                fileWriter.flush();
             } catch (IOException e) {
                 logger.error("IOException Occurred in method autoSendStatus");
             }

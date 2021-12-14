@@ -11,9 +11,16 @@ public class MotorUtil implements Runnable{
     private static final PinState LOW = PinState.LOW;
     private static final PinState HIGH = PinState.HIGH;
 		
-	private final PinState motorSequence[][] = new PinState[][] { { LOW, LOW, LOW, HIGH },
-            { LOW, LOW, HIGH, LOW }, { LOW, HIGH, LOW, LOW }, { HIGH, LOW, LOW, LOW }, { LOW, LOW, LOW, HIGH },
-            { LOW, LOW, HIGH, LOW }, { LOW, HIGH, LOW, LOW }, { HIGH, LOW, LOW, LOW } };
+	private final PinState motorSequence[][] = new PinState[][] {
+            { LOW, LOW, LOW, HIGH },
+            { LOW, LOW, HIGH, LOW },
+            { LOW, HIGH, LOW, LOW },
+            { HIGH, LOW, LOW, LOW },
+            { LOW, LOW, LOW, HIGH },
+            { LOW, LOW, HIGH, LOW },
+            { LOW, HIGH, LOW, LOW },
+            { HIGH, LOW, LOW, LOW }
+    };
 
     public MotorUtil(Pin pinA, Pin pinB, Pin pinC, Pin pinD, int stepDuration, boolean isFold) {
 		this.gpio = GpioFactory.getInstance();
@@ -67,15 +74,12 @@ public class MotorUtil implements Runnable{
         }
     }
 
-    private void writeSequence(int sequenceNo) {
+    private void writeSequence(int sequenceNo) throws InterruptedException {
         for (int i = 0; i < 4; i++) {
             motorPins[i].setState(motorSequence[sequenceNo][i]);
         }
-        try {
-            Thread.sleep(stepDuration);
-        } catch (InterruptedException e) {
-			e.printStackTrace();
-        }
+
+        Thread.sleep(stepDuration);
     }
 
     @Override
@@ -87,6 +91,7 @@ public class MotorUtil implements Runnable{
 				unfoldAction();
 			}
 		} catch (InterruptedException e) {
+            System.out.println("InterruptedException is Occurred");
 			e.printStackTrace();
 		}
 

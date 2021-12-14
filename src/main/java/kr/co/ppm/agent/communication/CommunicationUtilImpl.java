@@ -1,6 +1,5 @@
 package kr.co.ppm.agent.communication;
 
-import okhttp3.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,19 +21,18 @@ public class CommunicationUtilImpl implements CommunicationUtil {
 
     @Override
     public void autoStatusWatch() {
-        String autoStatusPath = "/home/pi/Desktop/watching/autostatus";
-
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(autoStatusPath);
+            Path path = Paths.get(CommunicationServiceImpl.filpathInfo.getProperty("autoStatusPath"));
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             WatchKey watchKey = watchService.take();
             watchKey.pollEvents();
 
             char[] buffer = new char[5];
-            try (FileReader fileReader = new FileReader(autoStatusPath + File.separator + "autoTemp.txt")) {
+            try (FileReader fileReader = new FileReader(
+                    CommunicationServiceImpl.filpathInfo.getProperty("autoStatusPath.file"))) {
                 fileReader.read(buffer);
             } catch (IOException e) {
                 logger.error("IOException Occurred in method autoStatusWatch");
@@ -53,14 +51,15 @@ public class CommunicationUtilImpl implements CommunicationUtil {
         try {
             WatchService watchService = FileSystems.getDefault().newWatchService();
 
-            Path path = Paths.get(activeStatusPath);
+            Path path = Paths.get(CommunicationServiceImpl.filpathInfo.getProperty("activeStatusPath"));
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             WatchKey watchKey = watchService.take();
             watchKey.pollEvents();
 
             char[] buffer = new char[5];
-            try (FileReader fileReader = new FileReader(activeStatusPath + File.separator + "activeTemp.txt")) {
+            try (FileReader fileReader = new FileReader(
+                    CommunicationServiceImpl.filpathInfo.getProperty("activeStatusPath.file"))) {
                 fileReader.read(buffer);
             } catch (IOException e) {
                 logger.error("IOException Occurred in method activeStatusWatch");

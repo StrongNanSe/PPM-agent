@@ -35,6 +35,8 @@ public class StatusWatchUtil implements Runnable {
                 try (BufferedWriter bufferedWriter = 
                 		new BufferedWriter(new OutputStreamWriter(new FileOutputStream(saveFilePath)))) {
                 	bufferedWriter.write("" + temperature);
+
+                    bufferedWriter.flush();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -26,19 +26,23 @@ public class CommunicationServiceImpl implements CommunicationService {
     private static String beforeTemperature = "";
     private static Properties parasolInfo;
     private static Properties systemInfo;
+    public static Properties filpathInfo;
 
     private Logger logger = LogManager.getLogger(CommunicationServiceImpl.class);
 
     static {
         String parasolPath = "properties/parasol.properties";
         String systemPath = "properties/system.properties";
+        String filepathPath = "properties/filepath.properties";
 
         parasolInfo = new Properties();
         systemInfo = new Properties();
+        filpathInfo = new Properties();
 
         try {
             parasolInfo.load(Resources.getResourceAsStream(parasolPath));
             systemInfo.load(Resources.getResourceAsStream(systemPath));
+            filpathInfo.load(Resources.getResourceAsStream(filepathPath));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -48,8 +52,6 @@ public class CommunicationServiceImpl implements CommunicationService {
 
     @Override
     public String receiveControl(String action) {
-        String commandPath = "/home/pi/Desktop/watching/command/command.txt";
-
         Gson code = new Gson();
 
         JsonObject jsonObject = new JsonObject();
@@ -57,7 +59,7 @@ public class CommunicationServiceImpl implements CommunicationService {
         jsonObject.addProperty("message", "null");
 
         try (FileWriter fileWriter =
-                      new FileWriter(commandPath)) {
+                      new FileWriter(filpathInfo.getProperty("commandPath.file"))) {
             fileWriter.write(action);
         } catch (IOException e) {
             logger.error("IOException Occurred in method receiveControl");
